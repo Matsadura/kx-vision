@@ -111,8 +111,10 @@ namespace kx {
                         CheckboxWithTooltip("3D Sphere", "ObjectStyle", &settings.objectESP.renderSphere, "Render a 3D sphere for the object.");
                         ImGui::SameLine(column2);
                         CheckboxWithTooltip("Show Distance", "ObjectStyle", &settings.objectESP.renderDistance, "Show the distance to the object.");
-
                         CheckboxWithTooltip("Show Dot", "ObjectStyle", &settings.objectESP.renderDot, "Render a dot at the object's exact location.");
+                        ImGui::SameLine(column1);
+						CheckboxWithTooltip("Show Line", "ObjectStyle", &settings.objectESP.renderLine, "Draw a line from the object to the bottom of the screen.");
+
 
                         ImGui::SeparatorText("Informational Overlays");
                         CheckboxWithTooltip("Show Details", "ObjectStyle", &settings.objectESP.renderDetails, "Show detailed information like the object type.");

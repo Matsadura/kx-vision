@@ -28,6 +28,7 @@ namespace kx {
         bool renderBox = false;
         bool renderDistance = false;
         bool renderDot = false;
+        bool renderLine = false;
         bool renderDetails = false;
         bool renderHealthBar = true;
         bool renderEnergyBar = false;
@@ -58,6 +59,7 @@ namespace kx {
         bool renderBox = false;
         bool renderDistance = false;
         bool renderDot = false;
+        bool renderLine = false;
         bool renderDetails = false;
         bool renderHealthBar = true;
         // Enhanced attitude filtering using the new enum
@@ -91,6 +93,7 @@ namespace kx {
         bool renderSphere = false;      // Render a 3D sphere for the object
         bool renderDistance = false;
         bool renderDot = true;
+		bool renderLine = false;
         bool renderDetails = false;
         
         // Gadget Type Filters

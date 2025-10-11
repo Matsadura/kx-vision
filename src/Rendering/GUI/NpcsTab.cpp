@@ -49,7 +49,7 @@ namespace kx {
                     }
 
                     ImGui::Separator();
-                    RenderCategoryStyleSettings("NPC Style", settings.npcESP.renderBox, settings.npcESP.renderDistance, settings.npcESP.renderDot, &settings.npcESP.renderHealthBar, nullptr, &settings.npcESP.renderDetails);
+                    RenderCategoryStyleSettings("NPC Style", settings.npcESP.renderBox, settings.npcESP.renderDistance, settings.npcESP.renderDot, settings.npcESP.renderLine, &settings.npcESP.renderHealthBar, nullptr, &settings.npcESP.renderDetails, nullptr);
 
                     if (settings.npcESP.renderDetails) {
                         ImGui::Separator();

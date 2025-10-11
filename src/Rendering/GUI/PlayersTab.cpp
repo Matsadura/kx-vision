@@ -47,7 +47,7 @@ namespace kx {
                     ImGui::PopItemWidth();
 
                     ImGui::Separator();
-                    RenderCategoryStyleSettings("Player Style", settings.playerESP.renderBox, settings.playerESP.renderDistance, settings.playerESP.renderDot, &settings.playerESP.renderHealthBar, &settings.playerESP.renderEnergyBar, &settings.playerESP.renderDetails, &settings.playerESP.renderPlayerName);
+                    RenderCategoryStyleSettings("Player Style", settings.playerESP.renderBox, settings.playerESP.renderDistance, settings.playerESP.renderDot, settings.playerESP.renderLine, &settings.playerESP.renderHealthBar, &settings.playerESP.renderEnergyBar, &settings.playerESP.renderDetails, &settings.playerESP.renderPlayerName);
 
                     if (settings.playerESP.renderDetails) {
                         ImGui::Separator();

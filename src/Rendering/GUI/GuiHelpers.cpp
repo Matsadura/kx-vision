@@ -16,10 +16,12 @@ namespace kx {
             bool& renderBox,
             bool& renderDistance,
             bool& renderDot,
+            bool& renderLine,
             bool* renderHealthBar,
             bool* renderEnergyBar,
             bool* renderDetails,
             bool* renderPlayerName) {
+
             if (ImGui::CollapsingHeader(categoryName, ImGuiTreeNodeFlags_DefaultOpen)) {
                 // Group 1: Core geometric visuals. These are fundamental.
                 ImGui::SeparatorText("Core Visuals");
@@ -29,10 +31,12 @@ namespace kx {
                 CheckboxWithId("Show Distance", categoryName, &renderDistance);
                 ImGui::SameLine(300); // Use a fixed position for clean alignment
                 CheckboxWithId("Show Dot", categoryName, &renderDot);
+				ImGui::SameLine(450); // Use a fixed position for clean alignment
+				CheckboxWithId("Show Line", categoryName, &renderLine);
 
                 // Check if there are any informational overlays to show.
                 // If not, we don't even render the separator, keeping the UI clean.
-                bool hasInfoOverlays = (renderHealthBar || renderDetails || renderPlayerName);
+                bool hasInfoOverlays = (renderHealthBar || renderDetails || renderPlayerName || renderEnergyBar);
 
                 if (hasInfoOverlays) {
                     // Group 2: Informational text and data overlays.

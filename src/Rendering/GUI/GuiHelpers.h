@@ -13,6 +13,7 @@ namespace kx {
          * @param renderBox Reference to box rendering toggle
          * @param renderDistance Reference to distance text toggle
          * @param renderDot Reference to center dot toggle
+		 * @param renderLine Reference to line to player toggle
          * @param renderHealthBar Optional pointer to health bar toggle (e.g., for Players/NPCs)
          * @param renderDetails Optional pointer to details text toggle
          * @param renderPlayerName Optional pointer to player name toggle (Players only)
@@ -20,7 +21,8 @@ namespace kx {
         void RenderCategoryStyleSettings(const char* categoryName, 
                                         bool& renderBox, 
                                         bool& renderDistance, 
-                                        bool& renderDot, 
+                                        bool& renderDot,
+			                            bool& renderLine,
                                         bool* renderHealthBar = nullptr, 
                                         bool* renderEnergyBar = nullptr,
                                         bool* renderDetails = nullptr, 

@@ -95,6 +95,30 @@ void ESPStageRenderer::RenderEntityComponents(ImDrawList* drawList, const Entity
         }
     }
 
+    // Draw line from local player to NPC dot when enabled
+    if (context.entityType == ESPEntityType::NPC && settings.npcESP.renderLine) {
+        glm::vec2 playerScreen;
+        if (ESPMath::WorldToScreen(camera.GetPlayerPosition(), camera, context.screenWidth, context.screenHeight, playerScreen)) {
+            drawList->AddLine(ImVec2(playerScreen.x, playerScreen.y), ImVec2(screenPos.x, screenPos.y), fadedEntityColor, finalBoxThickness);
+        }
+    }
+
+    // Draw line from local player to other players dots when enabled
+    if (context.entityType == ESPEntityType::Player && settings.playerESP.renderLine) {
+        glm::vec2 playerScreen;
+        if (ESPMath::WorldToScreen(camera.GetPlayerPosition(), camera, context.screenWidth, context.screenHeight, playerScreen)) {
+            drawList->AddLine(ImVec2(playerScreen.x, playerScreen.y), ImVec2(screenPos.x, screenPos.y), fadedEntityColor, finalBoxThickness);
+        }
+    }
+
+	// Draw line from local player to gadget dot when enabled
+    if (context.entityType == ESPEntityType::Gadget && settings.objectESP.renderLine) {
+        glm::vec2 playerScreen;
+        if (ESPMath::WorldToScreen(camera.GetPlayerPosition(), camera, context.screenWidth, context.screenHeight, playerScreen)) {
+            drawList->AddLine(ImVec2(playerScreen.x, playerScreen.y), ImVec2(screenPos.x, screenPos.y), fadedEntityColor, finalBoxThickness);
+        }
+    }
+
     // Render player name for natural identification (players only)
     if (context.entityType == ESPEntityType::Player && context.renderPlayerName) {
         // For hostile players with an empty name, display their profession
