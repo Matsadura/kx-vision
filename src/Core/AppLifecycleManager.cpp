@@ -330,6 +330,8 @@ void AppLifecycleManager::CleanupServices() {
         
         m_servicesInitialized = false;
     }
+    // Save settings regardless, so user changes persist even if init failed later
+    AppState::Get().SaveSettings();
 }
 
 ID3D11Device* AppLifecycleManager::GetDevice() const {
