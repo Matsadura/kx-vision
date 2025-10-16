@@ -9,7 +9,7 @@
 // ==============================
 
 namespace kx {
-    constexpr std::string_view APP_VERSION = "0.9";
+    constexpr std::string_view APP_VERSION = "1.0";
 
     // Configuration for the target process and function signature
     constexpr std::string_view TARGET_PROCESS_NAME = "Gw2-64.exe";
@@ -21,5 +21,13 @@ namespace kx {
     constexpr std::string_view BGFX_CONTEXT_FUNC_PATTERN = "BA 10 00 00 00 48 8B 04 C8 81 3C 02 62 67 66 78"; // backup: "57 ? ? ? ? 48 8B 35 2D CD" (Offset: 9)
     constexpr std::string_view CONTEXT_COLLECTION_FUNC_PATTERN = "8B ? ? ? ? ? 65 ? ? ? ? ? ? ? ? BA ? ? ? ? 48 ? ? ? 48 ? ? ? C3";
     constexpr std::string_view ALERT_CONTEXT_LOCATOR_PATTERN = "48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 41 0F 28 CA 48 8B 08 48 8B 51 58"; // "ViewAdvanceAlert"
+
+    namespace AppConfig {
+#ifdef _DEBUG
+        constexpr int DEFAULT_LOG_LEVEL = 1; // INFO
+#else
+        constexpr int DEFAULT_LOG_LEVEL = 3; // ERR
+#endif
+    }
 
 } // namespace kx

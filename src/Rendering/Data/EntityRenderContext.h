@@ -2,7 +2,6 @@
 
 #include <string>
 #include <vector>
-#include "../../../libs/glm/vec3.hpp"
 #include "RenderableData.h"
 #include "ESPData.h"
 
@@ -23,7 +22,11 @@ struct HealthBarAnimationState {
     // The percentage of the bar the damage accumulator should cover (0 if inactive)
     float damageAccumulatorPercent = 0.0f;
     // Alpha for the damage accumulator's fade-out animation
-    float damageAccumulatorAlpha = 1.0f; // NEW: Default to 1.0 (fully opaque)
+    float damageAccumulatorAlpha = 1.0f;
+
+    float damageNumberToDisplay = 0.0f;
+    float damageNumberAlpha = 0.0f;
+    float damageNumberYOffset = 0.0f; // For the upward scroll effect
 
     // --- Healing Overlay ---
     // The starting health percentage for the current heal overlay (0 if inactive)
@@ -86,13 +89,16 @@ struct EntityRenderContext {
     unsigned int color;
     
     /** Pre-built detail strings with colors (level, profession, etc.) */
-    const std::vector<ColoredDetail>& details;
+    std::vector<ColoredDetail> details;
     
     /** Health percentage [0.0 - 1.0], or -1.0f if not applicable */
     float healthPercent;
 
     /** Energy percentage [0.0 - 1.0], or -1.0f if not applicable */
     float energyPercent;
+
+    /** Calculated live burst DPS for the current damage window */
+    float burstDPS;
 
     // ===== Style and Settings =====
     
@@ -110,7 +116,8 @@ struct EntityRenderContext {
     
     /** Whether to render health bar */
     bool renderHealthBar;
-
+    /** Whether to render health percentage text */
+    bool renderHealthPercentage;
     /** Whether to render energy bar */
     bool renderEnergyBar;
     

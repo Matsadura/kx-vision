@@ -1,13 +1,16 @@
 #define NOMINMAX
 
 #include "ESPHealthBarRenderer.h"
-
+#include <iomanip>
 #include "../Utils/ESPConstants.h"
 #include "../../../libs/ImGui/imgui.h"
 #include <Windows.h>
 
 #include "../Data/EntityRenderContext.h"
 #include <algorithm>
+#include "../Utils/EntityVisualsCalculator.h"
+#include "Text/TextElement.h"
+#include "Text/TextRenderer.h"
 
 namespace kx {
 
@@ -100,8 +103,8 @@ namespace kx {
         if (anim.damageAccumulatorPercent <= 0.0f || anim.damageAccumulatorAlpha <= 0.0f) return;
 
         float startPercent = context.healthPercent;
-        float endPercent = anim.damageAccumulatorPercent;
-        if (endPercent > 1.f) endPercent = 1.f;
+        float endPercent = (anim.damageAccumulatorPercent > 1.0f) ? 1.0f : anim.damageAccumulatorPercent;
+
         if (endPercent <= startPercent) return;
 
         ImVec2 oMin(barMin.x + barWidth * startPercent, barMin.y);
@@ -138,6 +141,8 @@ namespace kx {
         flashColor = (flashColor & 0x00FFFFFF) | (ClampAlpha(a) << 24);
         DrawFilledRect(dl, fMin, fMax, flashColor, RenderingLayout::STANDALONE_HEALTH_BAR_BG_ROUNDING);
     }
+
+
 
     void ESPHealthBarRenderer::DrawBarrierOverlay(ImDrawList* dl,
         const EntityRenderContext& context,
@@ -198,23 +203,22 @@ namespace kx {
     // Public API
     // -----------------------------------------------------------------------------
     void ESPHealthBarRenderer::RenderStandaloneHealthBar(ImDrawList* drawList,
-        const glm::vec2& centerPos,
+        const glm::vec2& barTopLeftPosition,
         const EntityRenderContext& context,
         unsigned int entityColor,
         float barWidth,
-        float barHeight) { // Removed const
-        if (context.healthPercent < -1.0f) return; // allow exactly 0 for dead
-
+        float barHeight,
+        float fontSize) { 
+        
         const auto& anim = context.healthBarAnim;
         float fadeAlpha = ((entityColor >> 24) & 0xFF) / 255.0f;
         fadeAlpha *= anim.healthBarFadeAlpha;
 
-        if (fadeAlpha <= 0.f) return;
+        if (fadeAlpha <= 0.f) return; // Exit if NOTHING is visible
 
         // Geometry
-        const float yOffset = RenderingLayout::STANDALONE_HEALTH_BAR_Y_OFFSET;
-        ImVec2 barMin(centerPos.x - barWidth * 0.5f, centerPos.y + yOffset);
-        ImVec2 barMax(centerPos.x + barWidth * 0.5f, barMin.y + barHeight);
+        ImVec2 barMin(barTopLeftPosition.x, barTopLeftPosition.y);
+        ImVec2 barMax(barTopLeftPosition.x + barWidth, barTopLeftPosition.y + barHeight);
 
         // Background
         unsigned int bgAlpha =
@@ -226,11 +230,13 @@ namespace kx {
 
         // Alive vs Dead specialized rendering
         if (context.entity->currentHealth > 0) {
-            RenderAliveState(drawList, context, barMin, barMax, barWidth, entityColor, fadeAlpha);
+            RenderAliveState(drawList, context, barMin, barMax, barWidth, entityColor, fadeAlpha, fontSize);
         }
         else {
             RenderDeadState(drawList, context, barMin, barMax, barWidth, fadeAlpha);
         }
+
+
 
 		// Outer stroke settings
         const float outset = 1.0f; // 1 px outside, feels "harder" and more separated
@@ -272,7 +278,8 @@ namespace kx {
         const ImVec2& barMax,
         float barWidth,
         unsigned int entityColor,
-        float fadeAlpha) {
+        float fadeAlpha,
+        float fontSize) {
         const RenderableEntity* entity = context.entity;
         if (!entity || entity->maxHealth <= 0) return;
 
@@ -294,14 +301,51 @@ namespace kx {
 
         // 5. Barrier overlay (drawn last, on top of everything)
         DrawBarrierOverlay(drawList, context, barMin, barMax, barWidth, barHeight, fadeAlpha);
+
+        // 6. Health Percentage Text (drawn last, on top of everything)
+        if (context.renderHealthPercentage && context.healthPercent >= 0.0f) {
+            DrawHealthPercentageText(drawList, barMin, barMax, context.healthPercent, fontSize, fadeAlpha);
+        }
+    }
+
+    void ESPHealthBarRenderer::DrawHealthPercentageText(ImDrawList* dl, const ImVec2& barMin, const ImVec2& barMax, float healthPercent, float fontSize, float fadeAlpha)
+    {
+        // 1. Format the percentage string (unchanged)
+        int percent = static_cast<int>(healthPercent * 100.0f);
+        std::string text = std::to_string(percent); // Let's drop the "%" for an even cleaner look
+
+        // 2. Define the anchor point: to the right of the bar, vertically centered.
+        const float padding = 5.0f; // 5px gap between the bar and the text
+        glm::vec2 anchor(
+            barMax.x + padding,
+            barMin.y + (barMax.y - barMin.y) * 0.5f // Vertical center of the bar
+        );
+
+        // 3. Create the TextElement. We must align it to the left.
+        TextElement element(text, anchor, TextAnchor::Custom);
+        element.SetAlignment(TextAlignment::Left); // Anchor is on the left of the text
+
+        // 4. Define a style for high-contrast text (the previous style is still great)
+        TextStyle style;
+        style.fontSize = fontSize * 0.8f; // Keep it slightly smaller and subtle
+        style.textColor = IM_COL32(255, 255, 255, 255); // Pure white
+        style.enableBackground = false; // No background box
+        style.enableShadow = true;
+        style.shadowAlpha = 0.9f; // Strong shadow for readability
+        style.fadeAlpha = fadeAlpha; // Respect the overall bar fade
+
+        element.SetStyle(style);
+
+        // 5. Render using the global TextRenderer (unchanged)
+        TextRenderer::Render(dl, element);
     }
 
     void ESPHealthBarRenderer::RenderDeadState(ImDrawList* drawList,
-        const EntityRenderContext& context,
-        const ImVec2& barMin,
-        const ImVec2& barMax,
-        float barWidth,
-        float fadeAlpha) {
+                                               const EntityRenderContext& context,
+                                               const ImVec2& barMin,
+                                               const ImVec2& barMax,
+                                               float barWidth,
+                                               float fadeAlpha) {
         const auto& anim = context.healthBarAnim;
         if (anim.deathBurstAlpha <= 0.0f) return;
 
@@ -318,7 +362,7 @@ namespace kx {
     }
 
     void ESPHealthBarRenderer::RenderStandaloneEnergyBar(ImDrawList* drawList,
-        const glm::vec2& centerPos,
+        const glm::vec2& barTopLeftPosition,
         float energyPercent,
         float fadeAlpha,
         float barWidth,
@@ -326,10 +370,8 @@ namespace kx {
         float healthBarHeight) {
         if (energyPercent < 0.0f || energyPercent > 1.0f) return;
 
-        const float yOffset =
-            RenderingLayout::STANDALONE_HEALTH_BAR_Y_OFFSET + healthBarHeight + 2.0f; // 2px gap below health bar
-        ImVec2 barMin(centerPos.x - barWidth * 0.5f, centerPos.y + yOffset);
-        ImVec2 barMax(centerPos.x + barWidth * 0.5f, barMin.y + barHeight);
+        ImVec2 barMin(barTopLeftPosition.x, barTopLeftPosition.y);
+        ImVec2 barMax(barTopLeftPosition.x + barWidth, barTopLeftPosition.y + barHeight);
 
         // Background
         unsigned int bgAlpha =
@@ -350,5 +392,7 @@ namespace kx {
 
         DrawFilledRect(drawList, eMin, eMax, finalColor, RenderingLayout::STANDALONE_HEALTH_BAR_BG_ROUNDING);
     }
+
+
 
 } // namespace kx

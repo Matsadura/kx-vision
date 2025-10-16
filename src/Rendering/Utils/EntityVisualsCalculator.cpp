@@ -3,7 +3,8 @@
 #include "../../Game/Camera.h"
 #include "ESPMath.h"
 #include "ESPConstants.h"
-#include "../Data/EntityRenderContext.h"
+#include "ESPStyling.h"
+#include "../Data/RenderableData.h"
 #include "../Renderers/ESPShapeRenderer.h"
 #include <algorithm>
 #include <cmath>
@@ -61,39 +62,42 @@ namespace {
     }
 } // anonymous namespace
 
-std::optional<VisualProperties> EntityVisualsCalculator::Calculate(const EntityRenderContext& context,
+std::optional<VisualProperties> EntityVisualsCalculator::Calculate(const RenderableEntity& entity,
                                                                    Camera& camera,
                                                                    float screenWidth,
                                                                    float screenHeight) {
     VisualProperties props;
-    
+
     // 1. Check if entity is on screen
-    if (!IsEntityOnScreen(context.position, camera, screenWidth, screenHeight, props.screenPos)) {
+    if (!IsEntityOnScreen(entity.position, camera, screenWidth, screenHeight, props.screenPos)) {
         return std::nullopt; // Entity is not visible
     }
 
+    // Determine color based on entity type and attitude
+    unsigned int color = ESPStyling::GetEntityColor(entity);
+
     // 2. Calculate distance-based fade alpha
     const auto& settings = AppState::Get().GetSettings();
-    props.distanceFadeAlpha = CalculateDistanceFadeAlpha(context.gameplayDistance,
+    props.distanceFadeAlpha = CalculateDistanceFadeAlpha(entity.gameplayDistance,
                                                          settings.distance.useDistanceLimit,
                                                          settings.distance.renderDistanceLimit);
-    
+
     if (props.distanceFadeAlpha <= 0.0f) {
         return std::nullopt; // Entity is fully transparent
     }
-    
+
     // 3. Apply distance fade to entity color
-    props.fadedEntityColor = ESPShapeRenderer::ApplyAlphaToColor(context.color, props.distanceFadeAlpha);
+    props.fadedEntityColor = ESPShapeRenderer::ApplyAlphaToColor(color, props.distanceFadeAlpha);
 
     // 4. Calculate distance-based scale
-    props.scale = CalculateEntityScale(context.visualDistance, context.entityType);
+    props.scale = CalculateEntityScale(entity.visualDistance, entity.entityType);
 
     // 5. Calculate rendering dimensions (box or circle)
-    if (context.entityType == ESPEntityType::Gadget) {
+    if (entity.entityType == ESPEntityType::Gadget) {
         // Gadgets use circle rendering - calculate radius from base box width
         float baseRadius = settings.sizes.baseBoxWidth * EntitySizeRatios::GADGET_CIRCLE_RADIUS_RATIO;
         props.circleRadius = (std::max)(MinimumSizes::GADGET_MIN_WIDTH / 2.0f, baseRadius * props.scale);
-        
+
         // For gadgets, screenPos IS the center (no box needed)
         props.center = ImVec2(props.screenPos.x, props.screenPos.y);
         // Set dummy box values for text positioning (will be overridden for circles)
@@ -102,8 +106,8 @@ std::optional<VisualProperties> EntityVisualsCalculator::Calculate(const EntityR
     } else {
         // Players/NPCs use traditional box rendering
         float boxWidth, boxHeight;
-        CalculateEntityBoxDimensions(context.entityType, props.scale, boxWidth, boxHeight);
-        
+        CalculateEntityBoxDimensions(entity.entityType, props.scale, boxWidth, boxHeight);
+
         props.boxMin = ImVec2(props.screenPos.x - boxWidth / 2, props.screenPos.y - boxHeight);
         props.boxMax = ImVec2(props.screenPos.x + boxWidth / 2, props.screenPos.y);
         props.center = ImVec2(props.screenPos.x, props.screenPos.y - boxHeight / 2);
@@ -112,31 +116,40 @@ std::optional<VisualProperties> EntityVisualsCalculator::Calculate(const EntityR
 
     // 6. Calculate adaptive alpha
     float normalizedDistance = 0.0f;
-    props.finalAlpha = CalculateAdaptiveAlpha(context.gameplayDistance, props.distanceFadeAlpha,
-                                             settings.distance.useDistanceLimit, context.entityType,
+    props.finalAlpha = CalculateAdaptiveAlpha(entity.gameplayDistance, props.distanceFadeAlpha,
+                                             settings.distance.useDistanceLimit, entity.entityType,
                                              normalizedDistance);
-    
+
     // Hostile players always render at 100% opacity (critical for PvP combat awareness)
-    if (context.entityType == ESPEntityType::Player && context.attitude == Game::Attitude::Hostile) {
-        props.finalAlpha = 1.0f;
+    if (entity.entityType == ESPEntityType::Player) {
+        const auto* player = static_cast<const RenderablePlayer*>(&entity);
+        if (player->attitude == Game::Attitude::Hostile) {
+            props.finalAlpha = 1.0f;
+        }
     }
-    
+
     // Apply final alpha to the entity color
     props.fadedEntityColor = ESPShapeRenderer::ApplyAlphaToColor(props.fadedEntityColor, props.finalAlpha);
-    
+
     // 7. Calculate scaled sizes with limits
     // Determine multipliers
-    float hostileMultiplier = (context.entityType == ESPEntityType::Player && context.attitude == Game::Attitude::Hostile)
-                              ? RenderingEffects::HOSTILE_PLAYER_VISUAL_MULTIPLIER
-                              : 1.0f;
+    float hostileMultiplier = 1.0f;
+    if (entity.entityType == ESPEntityType::Player) {
+        const auto* player = static_cast<const RenderablePlayer*>(&entity);
+        if (player->attitude == Game::Attitude::Hostile) {
+            hostileMultiplier = RenderingEffects::HOSTILE_PLAYER_VISUAL_MULTIPLIER;
+        }
+    }
 
-    float rankMultiplier = (context.entityType == ESPEntityType::NPC)
-                           ? GetRankMultiplier(context.rank)
-                           : 1.0f;
+    float rankMultiplier = 1.0f;
+    if (entity.entityType == ESPEntityType::NPC) {
+        const auto* npc = static_cast<const RenderableNpc*>(&entity);
+        rankMultiplier = GetRankMultiplier(npc->rank);
+    }
 
     float gadgetHealthMultiplier = 1.0f;
-    if (context.entityType == ESPEntityType::Gadget && context.entity) {
-        gadgetHealthMultiplier = GetGadgetHealthMultiplier(context.entity->maxHealth);
+    if (entity.entityType == ESPEntityType::Gadget) {
+        gadgetHealthMultiplier = GetGadgetHealthMultiplier(entity.maxHealth);
     }
 
     // Calculate final sizes using the helper
@@ -319,6 +332,27 @@ float EntityVisualsCalculator::CalculateAdaptiveAlpha(float gameplayDistance, fl
         float progress = (gameplayDistance - fadeStart) / fadeRange;
         return 1.0f - (progress * (1.0f - settings.distance.playerNpcMinAlpha));
     }
+}
+
+float EntityVisualsCalculator::GetDamageNumberFontSizeMultiplier(float damageToDisplay) {
+    if (damageToDisplay <= 0.0f) {
+        return 2.0f; // Minimum multiplier for any damage
+    }
+
+    const float MIN_MULTIPLIER = 2.0f; // Minimum multiplier for any damage
+    const float MAX_MULTIPLIER = 4.0f; // Cap the multiplier
+    const float DAMAGE_TO_REACH_MAX_MULTIPLIER = 200000.0f; // Damage at which multiplier reaches MAX_MULTIPLIER
+
+    // Calculate how much additional multiplier to add based on damage
+    // The scaling range is (MAX_MULTIPLIER - MIN_MULTIPLIER)
+    // We want to scale from MIN_MULTIPLIER to MAX_MULTIPLIER over DAMAGE_TO_REACH_MAX_MULTIPLIER
+    
+    float progress = damageToDisplay / DAMAGE_TO_REACH_MAX_MULTIPLIER;
+    progress = (std::min)(progress, 1.0f); // Clamp progress to 1.0
+
+    float multiplier = MIN_MULTIPLIER + progress * (MAX_MULTIPLIER - MIN_MULTIPLIER);
+    
+    return multiplier; // No need for std::min with MAX_MULTIPLIER here, as progress is clamped
 }
 
 } // namespace kx

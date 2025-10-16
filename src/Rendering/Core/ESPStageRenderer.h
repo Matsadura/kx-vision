@@ -1,11 +1,15 @@
 #pragma once
 
+#include <optional>
+#include <map>
+#include <string>
 #include <vector>
+#include "glm.hpp"
+#include "../../../libs/ImGui/imgui.h"
 
 #include "Settings.h"
 #include "../Data/RenderableData.h"
 #include "../Data/ESPData.h"
-#include "../../Game/Camera.h"
 
 // Forward declarations
 struct ImDrawList;
@@ -15,69 +19,63 @@ namespace kx {
 // Forward declaration for context struct
 struct VisualProperties;
 struct EntityRenderContext;
+struct FrameContext;
 class CombatStateManager;
 
-struct FrameRenderContext
-{
-    ImDrawList* drawList;
-    Camera& camera;
-    CombatStateManager& stateManager;
-    const Settings& settings; // Good to add settings here too!
-    uint64_t now;
-    float screenWidth;
-    float screenHeight;
+struct CalculatedLayout {
+    std::map<std::string, glm::vec2> elementPositions;
+    glm::vec2 healthBarAnchor;
 };
 
-/**
- * @brief Handles safe rendering from extracted data (Stage 2 of rendering pipeline)
- * 
- * This class performs all rendering operations using safe local data structures.
- * It never accesses game memory directly, eliminating the risk of crashes during rendering.
- * 
- * Scalability: Detail building logic has been extracted to:
- * - ESPPlayerDetailsBuilder: Player-specific text generation and gear analysis
- * - ESPEntityDetailsBuilder: NPC and Gadget detail building
- */
 class ESPStageRenderer {
 public:
-    /**
-     * @brief Main rendering method - renders pooled data for one frame (OPTIMIZED)
-     * @param drawList ImGui draw list for rendering
-     * @param screenWidth Screen width in pixels
-     * @param screenHeight Screen height in pixels
-     * @param frameData Pooled extracted data for this frame (contains pointers)
-     * @param camera Camera reference for world-to-screen calculations
-     * @param stateManager Reference to the combat state manager
-     */
-    static void RenderFrameData(ImDrawList* drawList, float screenWidth, float screenHeight, 
-                               const PooledFrameRenderData& frameData, Camera& camera, 
-                               CombatStateManager& stateManager, uint64_t now);
+    static void RenderFrameData(const FrameContext& context, const PooledFrameRenderData& frameData);
 
 private:
-    // Pooled rendering functions for optimized performance
-    static void RenderPooledPlayers(const FrameRenderContext& context, const std::vector<RenderablePlayer*>& players);
-
-    static void RenderPooledNpcs(const FrameRenderContext& context, const std::vector<RenderableNpc*>& npcs);
-
-    static void RenderPooledGadgets(const FrameRenderContext& context, const std::vector<RenderableGadget*>& gadgets);
+    static void RenderEntityComponents(const FrameContext& context, EntityRenderContext& entityContext, const VisualProperties& props);
+    static std::optional<VisualProperties> CalculateLiveVisuals(const FinalizedRenderable& item, const FrameContext& context);
 
     /**
-     * @brief Universal entity rendering function using context struct
+     * @brief Gathers all visible layout elements and calculates their required size.
      */
-    static void RenderEntity(ImDrawList* drawList, const EntityRenderContext& context, Camera& camera, 
-                           CombatStateManager& stateManager, uint64_t now);
+    static void GatherLayoutElements(
+        const FrameContext& context,
+        const EntityRenderContext& entityContext,
+        const VisualProperties& props,
+        std::vector<std::pair<std::string, ImVec2>>& outAboveElements,
+        std::vector<std::pair<std::string, ImVec2>>& outBelowElements);
 
     /**
-     * @brief Render all visual components for an entity
-     * @param drawList ImGui draw list
-     * @param context Entity rendering context
-     * @param camera The game camera
-     * @param props The calculated visual properties for the entity
+     * @brief Renders all elements that are part of the dynamic layout system.
      */
-    static void RenderEntityComponents(ImDrawList* drawList, const EntityRenderContext& context,
-                                             Camera& camera, const struct VisualProperties& props);
+    static void RenderLayoutElements(
+        const FrameContext& context,
+        EntityRenderContext& entityContext,
+        const VisualProperties& props,
+        CalculatedLayout& layout);
 
+    /**
+     * @brief Renders static, non-layout elements like the bounding box and center dot.
+     */
+    static void RenderStaticElements(
+        const FrameContext& context,
+        const EntityRenderContext& entityContext,
+        const VisualProperties& props);
 
+    static void RenderBoundingBox(ImDrawList* drawList, const EntityRenderContext& context, const VisualProperties& props);
+    static void RenderGadgetVisuals(ImDrawList* drawList, const EntityRenderContext& context, Camera& camera, const VisualProperties& props, const Settings& settings);
+    static void RenderDistanceText(ImDrawList* drawList, const EntityRenderContext& context, const VisualProperties& props);
+    static void RenderCenterDot(ImDrawList* drawList, const EntityRenderContext& context, const VisualProperties& props);
+
+    // New methods for independent rendering
+    static void RenderDamageNumbers(const FrameContext& context, const EntityRenderContext& entityContext, const VisualProperties& props, const CalculatedLayout& layout);
+    static void RenderBurstDps(const FrameContext& context, const EntityRenderContext& entityContext, const VisualProperties& props, const CalculatedLayout& layout);
+
+    static void CalculateVerticalStack(
+        glm::vec2 startAnchor,
+        const std::vector<std::pair<std::string, ImVec2>>& elements, // name and size
+        std::map<std::string, glm::vec2>& outPositions,
+        bool stackUpwards);
 };
 
 } // namespace kx
