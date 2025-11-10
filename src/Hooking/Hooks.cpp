@@ -1,10 +1,15 @@
 #include "Hooks.h"
 
 #include <windows.h> // For __try/__except
+#include <unordered_map>
 
 #include "../Core/Config.h"      // For GW2AL_BUILD define
 #include "../Utils/DebugLogger.h"
-#include "AddressManager.h"
+#include "../Utils/SafeIterators.h"
+#include "../Utils/MemorySafety.h"
+#include "../Game/AddressManager.h"
+#include "../Game/NameResolver.h"
+#include "../Game/ReClassStructs.h"
 #include "AppState.h"
 #include "D3DRenderHook.h"
 #include "HookManager.h"
@@ -16,18 +21,63 @@ namespace kx {
         typedef void(__fastcall* GameThreadUpdateFunc)(void*, int);
         GameThreadUpdateFunc pOriginalGameThreadUpdate = nullptr;
 
-        void __fastcall DetourGameThread(void* pInst, int frame_time) {
+        void* GetContextCollection_SEH() {
             using GetContextCollectionFn = void* (*)();
 
-            uintptr_t funcAddr = AddressManager::GetContextCollectionFunc();
-            if (funcAddr) {
-                auto getContextCollection = reinterpret_cast<GetContextCollectionFn>(funcAddr);
+            const uintptr_t funcAddr = AddressManager::GetContextCollectionFunc();
+            if (!funcAddr) {
+                return nullptr;
+            }
 
-                __try {
-                    AddressManager::SetContextCollectionPtr(getContextCollection());
+            auto getContextCollection = reinterpret_cast<GetContextCollectionFn>(funcAddr);
+
+            __try {
+                return getContextCollection();
+            }
+            __except (EXCEPTION_EXECUTE_HANDLER) {
+                return nullptr;
+            }
+        }
+
+        void __fastcall DetourGameThread(void* pInst, int frame_time) {
+            static int frameCounter = 0;
+            if (++frameCounter >= 300) {
+                frameCounter = 0;
+                NameResolver::ClearNameCache();
+            }
+
+            void* pContextCollection = GetContextCollection_SEH();
+            AddressManager::SetContextCollectionPtr(pContextCollection);
+
+            if (pContextCollection && SafeAccess::IsMemorySafe(pContextCollection)) {
+                std::unordered_map<void*, uint8_t> agentPointers;
+                agentPointers.reserve(512);
+
+                ReClass::ContextCollection ctxCollection(pContextCollection);
+
+                ReClass::ChCliContext charContext = ctxCollection.GetChCliContext();
+                if (charContext.data()) {
+                    SafeAccess::CharacterList characterList(charContext);
+                    for (const auto& character : characterList) {
+                        if (character.data()) {
+                            // Cast away constness for storage as identifier only
+                            agentPointers.emplace(const_cast<void*>(character.data()), static_cast<uint8_t>(0));
+                        }
+                    }
                 }
-                __except (EXCEPTION_EXECUTE_HANDLER) {
-                    AddressManager::SetContextCollectionPtr(nullptr);
+
+                ReClass::GdCliContext gadgetContext = ctxCollection.GetGdCliContext();
+                if (gadgetContext.data()) {
+                    SafeAccess::GadgetList gadgetList(gadgetContext);
+                    for (const auto& gadget : gadgetList) {
+                        if (gadget.data()) {
+                            agentPointers.emplace(const_cast<void*>(gadget.data()), static_cast<uint8_t>(1));
+                        }
+                    }
+                }
+
+                if (!agentPointers.empty()) {
+                    NameResolver::CacheNamesForAgents(agentPointers);
                 }
             }
 

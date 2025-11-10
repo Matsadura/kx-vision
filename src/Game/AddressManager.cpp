@@ -198,6 +198,29 @@ void AddressManager::ScanGameThreadUpdateFunc() {
     LOG_INFO("[AddressManager] -> SUCCESS: GameThreadUpdate function resolved to: 0x%p", (void*)s_pointers.gameThreadUpdateFunc);
 }
 
+void AddressManager::ScanDecodeTextFunc() {
+    if (kx::DECODE_TEXT_PATTERN.empty()) {
+        LOG_WARN("[AddressManager] DecodeText pattern is empty. Name resolution for NPCs/Objects will fail.");
+        s_pointers.decodeTextFunc = 0;
+        return;
+    }
+
+    std::optional<uintptr_t> patternMatch = kx::PatternScanner::FindPattern(
+        std::string(kx::DECODE_TEXT_PATTERN),
+        std::string(kx::TARGET_PROCESS_NAME)
+    );
+
+    if (!patternMatch) {
+        LOG_ERROR("[AddressManager] DecodeText pattern not found. Name resolution for NPCs/Objects will fail.");
+        s_pointers.decodeTextFunc = 0;
+        return;
+    }
+
+    // The signature is assumed to start at the function entry point.
+    s_pointers.decodeTextFunc = *patternMatch - 16;
+    LOG_INFO("[AddressManager] -> SUCCESS: DecodeText function resolved to: 0x%p", (void*)s_pointers.decodeTextFunc);
+}
+
 void AddressManager::ScanModuleInformation() {
     HMODULE hModule = GetModuleHandleA("Gw2-64.exe");
     if (!hModule) {
@@ -224,6 +247,7 @@ void AddressManager::Scan() {
     ScanModuleInformation();
     ScanContextCollectionFunc();
     ScanGameThreadUpdateFunc();
+    ScanDecodeTextFunc();
 
     // Future feature scanners (currently inactive but kept for future use)
     // These are commented out to avoid unnecessary scanning overhead

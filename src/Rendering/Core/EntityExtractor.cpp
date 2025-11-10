@@ -2,6 +2,7 @@
 #include "../Utils/ESPConstants.h"
 #include "../Utils/ESPFormatting.h"
 #include "../../Game/GameEnums.h"
+#include "../../Game/NameResolver.h"
 #include "../../Utils/StringHelpers.h"
 #include <vector>
 
@@ -98,6 +99,7 @@ namespace PhysicsValidation {
         outNpc.isValid = true;
         outNpc.entityType = ESPEntityType::NPC;
         outNpc.address = inCharacter.data();
+        outNpc.name = NameResolver::GetCachedName(const_cast<void*>(inCharacter.data()));
 
         // --- Agent Info ---
         ReClass::AgChar agent = inCharacter.GetAgent();
@@ -135,6 +137,7 @@ namespace PhysicsValidation {
         outGadget.isValid = true;
         outGadget.entityType = ESPEntityType::Gadget;
         outGadget.address = inGadget.data();
+        outGadget.name = NameResolver::GetCachedName(const_cast<void*>(inGadget.data()));
         outGadget.type = inGadget.GetGadgetType();
         outGadget.isGatherable = inGadget.IsGatherable();
 

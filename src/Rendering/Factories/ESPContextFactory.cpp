@@ -131,6 +131,8 @@ EntityRenderContext ESPContextFactory::CreateContextForNpc(const RenderableNpc* 
     float burstDpsValue = CalculateBurstDps(state, context.now, context.settings.npcESP.showBurstDps);
     
     static const std::string emptyPlayerName = "";
+    // NPC name rendering: use npc->name when setting enables it
+    const std::string& nameRef = context.settings.npcESP.renderName ? npc->name : emptyPlayerName;
     return EntityRenderContext{
         .position = npc->position,
         .gameplayDistance = npc->gameplayDistance,
@@ -144,11 +146,11 @@ EntityRenderContext ESPContextFactory::CreateContextForNpc(const RenderableNpc* 
         .renderHealthBar = renderHealthBar,
         .renderHealthPercentage = context.settings.npcESP.showHealthPercentage,
         .renderEnergyBar = false, // No energy bar for NPCs
-        .renderPlayerName = false,
+        .renderPlayerName = context.settings.npcESP.renderName && !npc->name.empty(),
         .entityType = ESPEntityType::NPC,
         .attitude = npc->attitude,
         .entity = npc,
-        .playerName = emptyPlayerName,
+        .playerName = nameRef,
         .healthBarAnim = animState,
         .renderGadgetSphere = false,
         .renderGadgetCircle = false,
@@ -187,6 +189,7 @@ EntityRenderContext ESPContextFactory::CreateContextForGadget(const RenderableGa
         renderBox = false;
     }
 
+    const std::string& nameRef = context.settings.objectESP.renderName ? gadget->name : emptyPlayerName;
     return EntityRenderContext{
         .position = gadget->position,
         .gameplayDistance = gadget->gameplayDistance,
@@ -200,11 +203,11 @@ EntityRenderContext ESPContextFactory::CreateContextForGadget(const RenderableGa
         .renderHealthBar = renderHealthBar,
         .renderHealthPercentage = context.settings.objectESP.showHealthPercentage,
         .renderEnergyBar = false, // No energy bar for gadgets
-        .renderPlayerName = false,
+        .renderPlayerName = context.settings.objectESP.renderName && !gadget->name.empty(),
         .entityType = ESPEntityType::Gadget,
         .attitude = Game::Attitude::Neutral,
         .entity = gadget,
-        .playerName = emptyPlayerName,
+        .playerName = nameRef,
         .healthBarAnim = animState,
         .renderGadgetSphere = context.settings.objectESP.renderSphere,
         .renderGadgetCircle = context.settings.objectESP.renderCircle,

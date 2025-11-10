@@ -108,6 +108,7 @@
     <ClCompile Include="src\Core\GW2AL_Integration.cpp" />
     <ClCompile Include="src\Core\SettingsManager.cpp" />
     <ClCompile Include="src\Game\AddressManager.cpp" />
+  <ClCompile Include="src\Game\NameResolver.cpp" />
     <ClCompile Include="src\Game\Camera.cpp" />
     <ClCompile Include="src\Game\MumbleLinkManager.cpp" />
     <ClCompile Include="src\Hooking\D3DRenderHook_WndProc.cpp" />
@@ -175,6 +176,7 @@
     <ClInclude Include="src\Core\Settings\RenderSettings.h" />
     <ClInclude Include="src\Core\Settings\SettingsConstants.h" />
     <ClInclude Include="src\Game\AddressManager.h" />
+  <ClInclude Include="src\Game\NameResolver.h" />
     <ClInclude Include="src\Core\AppLifecycleManager.h" />
     <ClInclude Include="src\Core\AppState.h" />
     <ClInclude Include="src\Game\Camera.h" />

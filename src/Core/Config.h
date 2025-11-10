@@ -23,13 +23,15 @@ namespace kx {
     constexpr std::string_view CONTEXT_COLLECTION_FUNC_PATTERN = "8B ? ? ? ? ? 65 ? ? ? ? ? ? ? ? BA ? ? ? ? 48 ? ? ? 48 ? ? ? C3";
     constexpr std::string_view ALERT_CONTEXT_LOCATOR_PATTERN = "48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 41 0F 28 CA 48 8B 08 48 8B 51 58"; // "ViewAdvanceAlert"
 
+    constexpr std::string_view DECODE_TEXT_PATTERN = "? ? 48 8B F2 48 8B F9 48 85 C9 ? ? 41 B8 D7";
+
     namespace AppConfig {
         constexpr int DEFAULT_LOG_LEVEL = 1; // INFO (good balance for both Debug and Release)
     }
 
     // Hotkey Configuration
     namespace Hotkeys {
-        constexpr int TOGGLE_OVERLAY = VK_INSERT;  // Toggle ESP overlay visibility
+        constexpr int TOGGLE_OVERLAY = VK_INSERT; // Toggle ESP overlay visibility
         constexpr int EXIT_APPLICATION = VK_DELETE; // Shutdown application
     }
 

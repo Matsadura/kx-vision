@@ -74,6 +74,8 @@ namespace kx {
         bool showDamageNumbers = true;
         bool showOnlyDamaged = false;
         bool showHealthPercentage = false;
+        bool renderName = false; // New: render NPC name label
+
         // Rank filters
         bool showLegendary = true;
         bool showChampion = true;
@@ -93,7 +95,7 @@ namespace kx {
 
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(NpcEspSettings, enabled, renderBox, renderDistance, renderDot, renderDetails,
                                        renderHealthBar, showBurstDps, showDamageNumbers, showOnlyDamaged,
-                                       showHealthPercentage, showLegendary, showChampion, showElite, showVeteran,
+                                       showHealthPercentage, renderName, showLegendary, showChampion, showElite, showVeteran,
                                        showAmbient, showNormal, showDeadNpcs, showDetailLevel, showDetailHp,
                                        showDetailAttitude, showDetailRank, showDetailPosition, showFriendly,
                                        showHostile, showNeutral, showIndifferent);
@@ -113,7 +115,8 @@ namespace kx {
         bool showOnlyDamaged = true;
         bool showHealthPercentage = false;
         bool showDeadGadgets = true;
-        
+        bool renderName = false; // New: render Gadget name label
+
         // Gadget Type Filters
         bool showResourceNodes = true;    // Type 19
         bool showWaypoints = true;        // Type 18
@@ -147,7 +150,7 @@ namespace kx {
 
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ObjectEspSettings, enabled, renderBox, maxBoxHeight, renderCircle, renderSphere, renderDistance,
                                        renderDot, renderDetails, renderHealthBar, showBurstDps, showDamageNumbers,
-                                       showOnlyDamaged, showHealthPercentage, showDeadGadgets, showResourceNodes,
+                                       showOnlyDamaged, showHealthPercentage, showDeadGadgets, renderName, showResourceNodes,
                                        showWaypoints, showVistas, showCraftingStations, showAttackTargets,
                                        showPlayerCreated, showInteractables, showDoors, showPortals, showDestructible,
                                        showPoints, showPlayerSpecific, showProps, showBuildSites, showBountyBoards,

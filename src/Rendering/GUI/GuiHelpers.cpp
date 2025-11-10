@@ -31,7 +31,8 @@ namespace kx {
             ImGui::SeparatorText("Core Visuals");
             ImGui::Checkbox("Show Box##NPC", &settings.renderBox); ImGui::SameLine();
             ImGui::Checkbox("Show Dot##NPC", &settings.renderDot); ImGui::SameLine();
-            ImGui::Checkbox("Show Distance##NPC", &settings.renderDistance);
+            ImGui::Checkbox("Show Distance##NPC", &settings.renderDistance); ImGui::SameLine();
+            ImGui::Checkbox("Show Name##NPC", &settings.renderName);
 
             ImGui::SeparatorText("Status Bars");
             ImGui::Checkbox("Show Health Bar##NPC", &settings.renderHealthBar);
@@ -58,7 +59,8 @@ namespace kx {
             ImGui::Checkbox("2D Circle##Object", &settings.renderCircle); ImGui::SameLine();
             ImGui::Checkbox("3D Sphere##Object", &settings.renderSphere);
             ImGui::Checkbox("Show Dot##Object", &settings.renderDot); ImGui::SameLine();
-            ImGui::Checkbox("Show Distance##Object", &settings.renderDistance);
+            ImGui::Checkbox("Show Distance##Object", &settings.renderDistance); ImGui::SameLine();
+            ImGui::Checkbox("Show Name##Object", &settings.renderName);
 
             ImGui::SeparatorText("Status Bars");
             ImGui::Checkbox("Show Health Bar##Object", &settings.renderHealthBar);

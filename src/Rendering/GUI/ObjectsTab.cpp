@@ -120,7 +120,7 @@ namespace kx {
                     ImGui::Separator();
 
                     if (ImGui::CollapsingHeader("Visual Style", ImGuiTreeNodeFlags_DefaultOpen)) {
-                        RenderObjectStyleSettings(settings.objectESP);
+                        RenderObjectStyleSettings(settings.objectESP); // contains name toggle
                     }
 
                     RenderDetailedInformationSettings(settings.objectESP);
