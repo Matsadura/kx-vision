@@ -6,11 +6,23 @@
 #include "../../Core/AppState.h"
 #include <string>
 #include <cstdio>
+#include <algorithm>
+#include <cctype>
 
 namespace kx {
     namespace GUI {
 
         namespace {
+
+            // Helper: case-insensitive substring match
+            static bool CaseInsensitiveFind(const std::string& haystack, const char* needleCStr) {
+                if (!needleCStr || !*needleCStr) return true; // empty needle -> always match
+                std::string needle(needleCStr);
+                std::string h = haystack;
+                std::transform(h.begin(), h.end(), h.begin(), [](unsigned char c){ return (char)std::tolower(c); });
+                std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c){ return (char)std::tolower(c); });
+                return h.find(needle) != std::string::npos;
+            }
 
             void RenderVisibleNpcsTable() {
                 auto& settings = AppState::Get().GetSettings();
@@ -19,13 +31,23 @@ namespace kx {
                 bool includeOffscreen = settings.npcESP.listOffscreenEntities;
                 if (ImGui::CollapsingHeader("Visible NPCs", ImGuiTreeNodeFlags_DefaultOpen)) {
                     ImGui::Checkbox("List Off-Screen##NPCs", &settings.npcESP.listOffscreenEntities);
+
+                    // Search bar (persistent for session)
+                    static char npcSearch[64] = "";
+                    ImGui::SameLine();
+                    ImGui::SetNextItemWidth(200.0f);
+                    ImGui::InputTextWithHint("##NpcSearch", "Search NPCs...", npcSearch, IM_ARRAYSIZE(npcSearch));
+                    ImGui::SameLine();
+                    if (ImGui::SmallButton("Clear##NpcSearch")) { npcSearch[0] = '\0'; }
+
                     ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_SizingStretchSame;
-                    ImVec2 tableSize(0, 200);
-                    if (ImGui::BeginTable("VisibleNpcsTable", 1, flags, tableSize)) {
+                    ImVec2 tableSize(0,200);
+                    if (ImGui::BeginTable("VisibleNpcsTable",1, flags, tableSize)) {
                         if (includeOffscreen) {
                             for (const auto* npc : filteredData.npcs) {
                                 if (!npc) continue;
                                 std::string name = npc->name.empty() ? "(NPC)" : npc->name;
+                                if (!CaseInsensitiveFind(name, npcSearch)) continue; // filter
                                 float dist = npc->gameplayDistance;
                                 char buf[256];
                                 std::snprintf(buf, sizeof(buf), "%s - %.1fm", name.c_str(), dist);
@@ -38,6 +60,7 @@ namespace kx {
                                 if (item.context.entityType != ESPEntityType::NPC) continue;
                                 const RenderableNpc* npc = static_cast<const RenderableNpc*>(item.entity);
                                 std::string name = npc && !npc->name.empty() ? npc->name : "(NPC)";
+                                if (!CaseInsensitiveFind(name, npcSearch)) continue; // filter
                                 float dist = item.entity->gameplayDistance;
                                 char buf[256];
                                 std::snprintf(buf, sizeof(buf), "%s - %.1fm", name.c_str(), dist);
@@ -71,8 +94,8 @@ namespace kx {
                     }
 
                     if (ImGui::CollapsingHeader("Rank Filter")) {
-                        const float column1 = 180.0f;
-                        const float column2 = 360.0f;
+                        const float column1 =180.0f;
+                        const float column2 =360.0f;
                         ImGui::Checkbox("Show Legendary##NPC", &settings.npcESP.showLegendary);
                         ImGui::SameLine(column1);
                         ImGui::Checkbox("Show Champion##NPC", &settings.npcESP.showChampion);

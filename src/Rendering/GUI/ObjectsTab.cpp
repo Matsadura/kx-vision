@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 #include <cstdio>
+#include <algorithm>
+#include <cctype>
 
 namespace kx {
     namespace GUI {
@@ -33,6 +35,16 @@ namespace kx {
                 for (bool* filter : filters) *filter = value;
             }
 
+            // Helper: case-insensitive substring match
+            static bool CaseInsensitiveFind(const std::string& haystack, const char* needleCStr) {
+                if (!needleCStr || !*needleCStr) return true; // empty needle -> always match
+                std::string needle(needleCStr);
+                std::string h = haystack;
+                std::transform(h.begin(), h.end(), h.begin(), [](unsigned char c){ return (char)std::tolower(c); });
+                std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c){ return (char)std::tolower(c); });
+                return h.find(needle) != std::string::npos;
+            }
+
             void RenderVisibleObjectsTable() {
                 auto& settings = AppState::Get().GetSettings();
                 const auto& visualsData = ESPRenderer::GetProcessedRenderData();
@@ -40,9 +52,18 @@ namespace kx {
                 bool includeOffscreen = settings.objectESP.listOffscreenEntities;
                 if (ImGui::CollapsingHeader("Visible Objects", ImGuiTreeNodeFlags_DefaultOpen)) {
                     ImGui::Checkbox("List Off-Screen##Objects", &settings.objectESP.listOffscreenEntities);
+
+                    // Search bar (persistent for session)
+                    static char objectSearch[64] = "";
+                    ImGui::SameLine();
+                    ImGui::SetNextItemWidth(200.0f);
+                    ImGui::InputTextWithHint("##ObjectSearch", "Search objects...", objectSearch, IM_ARRAYSIZE(objectSearch));
+                    ImGui::SameLine();
+                    if (ImGui::SmallButton("Clear##ObjectSearch")) { objectSearch[0] = '\0'; }
+
                     ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_SizingStretchSame;
-                    ImVec2 tableSize(0, 200);
-                    if (ImGui::BeginTable("VisibleObjectsTable", 1, flags, tableSize)) {
+                    ImVec2 tableSize(0,200);
+                    if (ImGui::BeginTable("VisibleObjectsTable",1, flags, tableSize)) {
                         if (includeOffscreen) {
                             // Gadgets
                             for (const auto* g : filteredData.gadgets) {
@@ -52,6 +73,7 @@ namespace kx {
                                     if (const char* typeName = ESPFormatting::GetGadgetTypeName(g->type)) name = typeName;
                                     else name = "Gadget";
                                 }
+                                if (!CaseInsensitiveFind(name, objectSearch)) continue; // search filter
                                 float dist = g->gameplayDistance;
                                 char buf[256];
                                 std::snprintf(buf, sizeof(buf), "%s - %.1fm", name.c_str(), dist);
@@ -63,6 +85,7 @@ namespace kx {
                             for (const auto* a : filteredData.attackTargets) {
                                 if (!a) continue;
                                 std::string name = "Attack Target";
+                                if (!CaseInsensitiveFind(name, objectSearch)) continue; // search filter
                                 float dist = a->gameplayDistance;
                                 char buf[128];
                                 std::snprintf(buf, sizeof(buf), "%s - %.1fm", name.c_str(), dist);
@@ -83,6 +106,7 @@ namespace kx {
                                         else name = "Gadget";
                                     } else name = "Gadget";
                                 } else name = "Attack Target";
+                                if (!CaseInsensitiveFind(name, objectSearch)) continue; // search filter
                                 float dist = item.entity->gameplayDistance;
                                 char buf[256];
                                 std::snprintf(buf, sizeof(buf), "%s - %.1fm", name.c_str(), dist);
@@ -99,14 +123,13 @@ namespace kx {
 
 
 
-
         } // anonymous namespace
 
         void RenderObjectTypeFilters(ObjectEspSettings& settings) {
             if (ImGui::CollapsingHeader("Object Type Filters")) {
                 ImGui::Indent();
-                const float column1 = 180.0f;
-                const float column2 = 360.0f;
+                const float column1 =180.0f;
+                const float column2 =360.0f;
                 CheckboxWithTooltip("Waypoints", "Objects", &settings.showWaypoints, "Show map waypoints.");
                 ImGui::SameLine(column1);
                 CheckboxWithTooltip("Vistas", "Objects", &settings.showVistas, "Show vista locations.");
@@ -139,9 +162,9 @@ namespace kx {
                 CheckboxWithTooltip("Unknown", "Objects", &settings.showUnknown, "Show any object type not explicitly handled.");
                 ImGui::Separator();
                 ImGui::Text("Quick Selection:");
-                if (ImGui::Button("Select All", ImVec2(100, 0))) SetAllObjectFilters(settings, true);
+                if (ImGui::Button("Select All", ImVec2(100,0))) SetAllObjectFilters(settings, true);
                 ImGui::SameLine();
-                if (ImGui::Button("Clear All", ImVec2(100, 0))) SetAllObjectFilters(settings, false);
+                if (ImGui::Button("Clear All", ImVec2(100,0))) SetAllObjectFilters(settings, false);
                 ImGui::Unindent();
             }
         }
