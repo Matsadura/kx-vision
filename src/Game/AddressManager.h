@@ -105,7 +105,6 @@ public:
     static void* GetContextCollectionPtr() { 
         return s_pointers.pContextCollection.load(std::memory_order_acquire); 
     }
-    static bool RefreshMovementAddresses();
     
     // Module information getters for VTable validation
     static uintptr_t GetModuleBase() { return s_pointers.moduleBase; }
@@ -126,8 +125,6 @@ private:
     static void ScanContextCollectionFunc();
     static void ScanGameThreadUpdateFunc();
     static void ScanDecodeTextFunc();
-    static void ScanMovementAnchors();
-    static void ScanFeaturePatterns();
 
     // Single static struct instance holding all pointers.
     static GamePointers s_pointers;
