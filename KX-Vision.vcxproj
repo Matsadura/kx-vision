@@ -108,9 +108,10 @@
     <ClCompile Include="src\Core\GW2AL_Integration.cpp" />
     <ClCompile Include="src\Core\SettingsManager.cpp" />
     <ClCompile Include="src\Game\AddressManager.cpp" />
-  <ClCompile Include="src\Game\NameResolver.cpp" />
+    <ClCompile Include="src\Game\NameResolver.cpp" />
     <ClCompile Include="src\Game\Camera.cpp" />
     <ClCompile Include="src\Game\MumbleLinkManager.cpp" />
+    <ClCompile Include="src\Game\HackManager.cpp" />
     <ClCompile Include="src\Hooking\D3DRenderHook_WndProc.cpp" />
     <ClCompile Include="src\Rendering\Animations\HealthBarAnimations.cpp" />
     <ClCompile Include="src\Rendering\Combat\CombatStateManager.cpp" />
@@ -176,7 +177,7 @@
     <ClInclude Include="src\Core\Settings\RenderSettings.h" />
     <ClInclude Include="src\Core\Settings\SettingsConstants.h" />
     <ClInclude Include="src\Game\AddressManager.h" />
-  <ClInclude Include="src\Game\NameResolver.h" />
+    <ClInclude Include="src\Game\NameResolver.h" />
     <ClInclude Include="src\Core\AppLifecycleManager.h" />
     <ClInclude Include="src\Core\AppState.h" />
     <ClInclude Include="src\Game\Camera.h" />
@@ -194,6 +195,7 @@
     <ClInclude Include="src\Game\ReClass\GadgetStructs.h" />
     <ClInclude Include="src\Game\ReClass\ItemStructs.h" />
     <ClInclude Include="src\Game\ReClass\StatStructs.h" />
+    <ClInclude Include="src\Game\HackManager.h" />
     <ClInclude Include="src\Hooking\D3DRenderHook.h" />
     <ClInclude Include="src\Hooking\GW2AL\d3d9_wrapper_structs.h" />
     <ClInclude Include="src\Rendering\Animations\HealthBarAnimations.h" />

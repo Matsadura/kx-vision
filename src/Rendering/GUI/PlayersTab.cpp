@@ -5,6 +5,7 @@
 #include "../Utils/ESPFormatting.h"
 #include "../../../libs/ImGui/imgui.h"
 #include "../../Core/AppState.h"
+#include "../../Game/HackManager.h"
 #include <cstdio>
 #include <string>
 #include <algorithm>
@@ -60,20 +61,21 @@ namespace kx {
 
                                 ImGui::TableNextRow();
                                 ImGui::TableNextColumn();
-                                ImGui::TextUnformatted(buf);
+                                if (ImGui::Selectable(buf, false, ImGuiSelectableFlags_SpanAllColumns)) {
+                                    // Teleport to this player's current world position (already in Mumble meters)
+                                    TeleportManager::TeleportToMumblePosition(player->position);
+                                }
                             }
                         } else {
                             // Use processed (on-screen) finalized entities
                             for (const auto& item : visualsData.finalizedEntities) {
                                 if (item.context.entityType != ESPEntityType::Player) continue;
                                 std::string name = item.context.playerName;
-                                if (name.empty()) {
-                                    const auto* player = static_cast<const RenderablePlayer*>(item.entity);
-                                    if (player) {
-                                        if (const char* prof = ESPFormatting::GetProfessionName(player->profession)) name = prof;
-                                    }
-                                    if (name.empty()) name = "(Unknown)";
+                                const auto* player = static_cast<const RenderablePlayer*>(item.entity);
+                                if (name.empty() && player) {
+                                    if (const char* prof = ESPFormatting::GetProfessionName(player->profession)) name = prof;
                                 }
+                                if (name.empty()) name = "(Unknown)";
                                 if (!CaseInsensitiveFind(name, playerSearch)) continue; // search filter
                                 float dist = item.entity->gameplayDistance;
                                 char buf[256];
@@ -81,7 +83,9 @@ namespace kx {
 
                                 ImGui::TableNextRow();
                                 ImGui::TableNextColumn();
-                                ImGui::TextUnformatted(buf);
+                                if (ImGui::Selectable(buf, false, ImGuiSelectableFlags_SpanAllColumns)) {
+                                    TeleportManager::TeleportToMumblePosition(item.entity->position);
+                                }
                             }
                         }
                         ImGui::EndTable();
@@ -205,7 +209,7 @@ namespace kx {
                         }
                     }
 
-                    // Visible Players live table
+                    // New: list of visible players with teleport-on-click
                     RenderVisiblePlayersTable();
                 }
                 ImGui::EndTabItem();

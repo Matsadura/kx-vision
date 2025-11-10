@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <optional>
 
 namespace kx {
 
@@ -45,6 +46,21 @@ struct GamePointers {
     uintptr_t gameThreadUpdateFunc = 0;
     uintptr_t decodeTextFunc = 0;
     std::atomic<void*> pContextCollection{nullptr};
+
+    // Movement and feature control addresses
+    uintptr_t movementPointerLocation = 0;
+    uintptr_t movementBasePointer = 0;
+    uintptr_t positionXAddress = 0;
+    uintptr_t positionYAddress = 0;
+    uintptr_t positionZAddress = 0;
+    uintptr_t zHeightPrimaryAddress = 0;
+    uintptr_t zHeightSecondaryAddress = 0;
+    uintptr_t gravityAddress = 0;
+    uintptr_t speedAddress = 0;
+    uintptr_t wallClimbAddress = 0;
+    uintptr_t fogPatchAddress = 0;
+    uintptr_t objectClippingAddress = 0;
+    uintptr_t fullStrafeAddress = 0;
     
     // Module information for VTable validation
     uintptr_t moduleBase = 0;
@@ -54,6 +70,14 @@ struct GamePointers {
 class AddressManager {
 public:
     static void Initialize();
+
+    struct PlayerPositionAddresses {
+        uintptr_t visual = 0;
+        uintptr_t secondary = 0;
+        uintptr_t tertiary = 0;
+        uintptr_t physics = 0;
+        uintptr_t grounded = 0;
+    };
 
     // Public setter for the hook to store the captured pointer.
     static void SetContextCollectionPtr(void* ptr);
@@ -65,9 +89,23 @@ public:
     static uintptr_t GetContextCollectionFunc() { return s_pointers.contextCollectionFunc; }
     static uintptr_t GetGameThreadUpdateFunc() { return s_pointers.gameThreadUpdateFunc; }
     static uintptr_t GetDecodeTextFunc() { return s_pointers.decodeTextFunc; }
+    static uintptr_t GetMovementPointerLocation() { return s_pointers.movementPointerLocation; }
+    static uintptr_t GetMovementBasePointer() { return s_pointers.movementBasePointer; }
+    static uintptr_t GetPlayerPositionXAddress() { return s_pointers.positionXAddress; }
+    static uintptr_t GetPlayerPositionYAddress() { return s_pointers.positionYAddress; }
+    static uintptr_t GetPlayerPositionZAddress() { return s_pointers.positionZAddress; }
+    static uintptr_t GetPrimaryZHeightAddress() { return s_pointers.zHeightPrimaryAddress; }
+    static uintptr_t GetSecondaryZHeightAddress() { return s_pointers.zHeightSecondaryAddress; }
+    static uintptr_t GetGravityAddress() { return s_pointers.gravityAddress; }
+    static uintptr_t GetSpeedAddress() { return s_pointers.speedAddress; }
+    static uintptr_t GetWallClimbAddress() { return s_pointers.wallClimbAddress; }
+    static uintptr_t GetFogPatchAddress() { return s_pointers.fogPatchAddress; }
+    static uintptr_t GetObjectClippingAddress() { return s_pointers.objectClippingAddress; }
+    static uintptr_t GetFullStrafeAddress() { return s_pointers.fullStrafeAddress; }
     static void* GetContextCollectionPtr() { 
         return s_pointers.pContextCollection.load(std::memory_order_acquire); 
     }
+    static bool RefreshMovementAddresses();
     
     // Module information getters for VTable validation
     static uintptr_t GetModuleBase() { return s_pointers.moduleBase; }
@@ -75,6 +113,8 @@ public:
 
     // Local player detection
     static void* GetLocalPlayer();
+
+    static std::optional<PlayerPositionAddresses> ResolvePlayerPositionAddresses();
 
 private:
     static void* GetLocalPlayerImpl(void* pContextCollection); // Helper to avoid object unwinding issues
@@ -86,6 +126,8 @@ private:
     static void ScanContextCollectionFunc();
     static void ScanGameThreadUpdateFunc();
     static void ScanDecodeTextFunc();
+    static void ScanMovementAnchors();
+    static void ScanFeaturePatterns();
 
     // Single static struct instance holding all pointers.
     static GamePointers s_pointers;

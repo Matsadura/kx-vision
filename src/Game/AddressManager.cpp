@@ -2,10 +2,12 @@
 
 #include <windows.h>
 #include <psapi.h>
+#include <glm/vec3.hpp>
 
 #include "../Core/Config.h" // For TARGET_PROCESS_NAME
 #include "../Utils/DebugLogger.h"
 #include "../Utils/PatternScanner.h"
+#include "../Utils/MemorySafety.h"
 #include "ReClassStructs.h" // For ContextCollection and ChCliContext
 
 namespace kx {
@@ -265,6 +267,80 @@ void* AddressManager::GetLocalPlayer() {
     if (!s_pointers.pContextCollection) return nullptr;
     
     return GetLocalPlayerImpl(s_pointers.pContextCollection);
+}
+
+std::optional<AddressManager::PlayerPositionAddresses> AddressManager::ResolvePlayerPositionAddresses()
+{
+    PlayerPositionAddresses addresses{};
+
+    void* localPlayerPtr = GetLocalPlayer();
+    if (!localPlayerPtr)
+    {
+        LOG_WARN("[AddressManager] ResolvePlayerPositionAddresses: Local player pointer not available");
+        return std::nullopt;
+    }
+
+    ReClass::ChCliCharacter localPlayer(localPlayerPtr);
+    if (!localPlayer.isValid())
+    {
+        LOG_WARN("[AddressManager] ResolvePlayerPositionAddresses: Local player wrapper invalid");
+        return std::nullopt;
+    }
+
+    auto agent = localPlayer.GetAgent();
+    if (!agent.isValid())
+    {
+        LOG_WARN("[AddressManager] ResolvePlayerPositionAddresses: Agent pointer invalid");
+        return std::nullopt;
+    }
+
+    auto coChar = agent.GetCoChar();
+    if (!coChar.isValid())
+    {
+        LOG_WARN("[AddressManager] ResolvePlayerPositionAddresses: CoChar pointer invalid");
+        return std::nullopt;
+    }
+
+    addresses.visual = coChar.address() + Offsets::CoChar::VISUAL_POSITION;
+    if (addresses.visual == 0 || !SafeAccess::IsMemorySafe(reinterpret_cast<void*>(addresses.visual), sizeof(glm::vec3)))
+    {
+        LOG_ERROR("[AddressManager] ResolvePlayerPositionAddresses: Visual position address invalid or unsafe");
+        return std::nullopt;
+    }
+
+    auto simpleWrapper = coChar.GetSimpleCliWrapper();
+    if (simpleWrapper.isValid())
+    {
+        addresses.secondary = simpleWrapper.address() + Offsets::CoCharSimpleCliWrapper::POSITION_ALT1;
+        if (!SafeAccess::IsMemorySafe(reinterpret_cast<void*>(addresses.secondary), sizeof(glm::vec3)))
+        {
+            addresses.secondary = 0;
+        }
+
+        addresses.tertiary = simpleWrapper.address() + Offsets::CoCharSimpleCliWrapper::POSITION_ALT2;
+        if (!SafeAccess::IsMemorySafe(reinterpret_cast<void*>(addresses.tertiary), sizeof(glm::vec3)))
+        {
+            addresses.tertiary = 0;
+        }
+
+        auto physics = simpleWrapper.GetPhysicsPhantom();
+        if (physics.isValid())
+        {
+            addresses.physics = physics.address() + Offsets::HkpSimpleShapePhantom::PHYSICS_POSITION;
+            if (!SafeAccess::IsMemorySafe(reinterpret_cast<void*>(addresses.physics), sizeof(glm::vec3)))
+            {
+                addresses.physics = 0;
+            }
+        }
+    }
+
+    addresses.grounded = agent.address() + Offsets::AgChar::GROUNDED_POSITION32;
+    if (!SafeAccess::IsMemorySafe(reinterpret_cast<void*>(addresses.grounded), sizeof(glm::vec3)))
+    {
+        addresses.grounded = 0;
+    }
+
+    return addresses;
 }
 
 // Implementation function to avoid object unwinding issues

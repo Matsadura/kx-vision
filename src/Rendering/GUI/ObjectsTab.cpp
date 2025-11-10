@@ -6,6 +6,7 @@
 #include "../../../libs/ImGui/imgui.h"
 #include "../../Core/AppState.h"
 #include "../../Core/Settings.h"
+#include "../../Game/HackManager.h"
 #include <string>
 #include <vector>
 #include <cstdio>
@@ -79,7 +80,9 @@ namespace kx {
                                 std::snprintf(buf, sizeof(buf), "%s - %.1fm", name.c_str(), dist);
                                 ImGui::TableNextRow();
                                 ImGui::TableNextColumn();
-                                ImGui::TextUnformatted(buf);
+                                if (ImGui::Selectable(buf, false, ImGuiSelectableFlags_SpanAllColumns)) {
+                                    TeleportManager::TeleportToMumblePosition(g->position);
+                                }
                             }
                             // Attack Targets
                             for (const auto* a : filteredData.attackTargets) {
@@ -91,7 +94,9 @@ namespace kx {
                                 std::snprintf(buf, sizeof(buf), "%s - %.1fm", name.c_str(), dist);
                                 ImGui::TableNextRow();
                                 ImGui::TableNextColumn();
-                                ImGui::TextUnformatted(buf);
+                                if (ImGui::Selectable(buf, false, ImGuiSelectableFlags_SpanAllColumns)) {
+                                    TeleportManager::TeleportToMumblePosition(a->position);
+                                }
                             }
                         } else {
                             for (const auto& item : visualsData.finalizedEntities) {
@@ -112,7 +117,9 @@ namespace kx {
                                 std::snprintf(buf, sizeof(buf), "%s - %.1fm", name.c_str(), dist);
                                 ImGui::TableNextRow();
                                 ImGui::TableNextColumn();
-                                ImGui::TextUnformatted(buf);
+                                if (ImGui::Selectable(buf, false, ImGuiSelectableFlags_SpanAllColumns)) {
+                                    TeleportManager::TeleportToMumblePosition(item.entity->position);
+                                }
                             }
                         }
                         ImGui::EndTable();
