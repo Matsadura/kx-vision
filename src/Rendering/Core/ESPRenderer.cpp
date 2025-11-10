@@ -34,6 +34,11 @@ static PooledFrameRenderData s_processedRenderData; // Filtered data ready for r
 static float s_lastUpdateTime = 0.0f;
 static CombatStateManager g_combatStateManager;
 
+// NEW: Accessor implementation
+const PooledFrameRenderData& ESPRenderer::GetProcessedRenderData() {
+    return s_processedRenderData;
+}
+
 void ESPRenderer::Initialize(Camera& camera) {
     s_camera = &camera;
 }

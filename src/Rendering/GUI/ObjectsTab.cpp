@@ -1,16 +1,19 @@
 #include "ObjectsTab.h"
 #include "GuiHelpers.h"
+#include "../Core/ESPRenderer.h"
+#include "../Data/ESPEntityTypes.h"
+#include "../Utils/ESPFormatting.h"
 #include "../../../libs/ImGui/imgui.h"
 #include "../../Core/AppState.h"
 #include "../../Core/Settings.h"
 #include <string>
 #include <vector>
+#include <cstdio>
 
 namespace kx {
     namespace GUI {
 
         namespace {
-            // Local helper to render a checkbox with a unique ID and a tooltip.
             void CheckboxWithTooltip(const char* label, const char* categoryId, bool* value, const char* tooltip) {
                 std::string unique_label = std::string(label) + "##" + categoryId;
                 ImGui::Checkbox(unique_label.c_str(), value);
@@ -19,7 +22,6 @@ namespace kx {
                 }
             }
 
-            // The "Select All / Clear All" helper - excludes Attack Target List (has its own section)
             void SetAllObjectFilters(ObjectEspSettings& settings, bool value) {
                 std::vector<bool*> filters = {
                     &settings.showResourceNodes, &settings.showWaypoints, &settings.showVistas,
@@ -31,6 +33,39 @@ namespace kx {
                 };
                 for (bool* filter : filters) {
                     *filter = value;
+                }
+            }
+            // NEW: Visible Objects table (gadgets + attack targets)
+            void RenderVisibleObjectsTable() {
+                const auto& data = ESPRenderer::GetProcessedRenderData();
+                if (ImGui::CollapsingHeader("Visible Objects", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_SizingStretchSame;
+                    ImVec2 tableSize(0, 200);
+                    if (ImGui::BeginTable("VisibleObjectsTable", 1, flags, tableSize)) {
+                        for (const auto& item : data.finalizedEntities) {
+                            bool isGadget = item.context.entityType == ESPEntityType::Gadget;
+                            bool isAttackTarget = item.context.entityType == ESPEntityType::AttackTarget;
+                            if (!isGadget && !isAttackTarget) continue;
+                            std::string name;
+                            if (isGadget) {
+                                const RenderableGadget* g = static_cast<const RenderableGadget*>(item.entity);
+                                if (g && !g->name.empty()) name = g->name;
+                                else if (g) {
+                                    if (const char* typeName = ESPFormatting::GetGadgetTypeName(g->type)) name = typeName; else name = "Gadget";
+                                } else name = "Gadget";
+                            } else {
+                                name = "Attack Target"; // Could extend with ID if desired
+                            }
+                            if (name.empty()) name = isGadget ? "Gadget" : "Attack Target";
+                            float dist = item.entity->gameplayDistance;
+                            char buf[256];
+                            std::snprintf(buf, sizeof(buf), "%s - %.1fm", name.c_str(), dist);
+                            ImGui::TableNextRow();
+                            ImGui::TableNextColumn();
+                            ImGui::TextUnformatted(buf);
+                        }
+                        ImGui::EndTable();
+                    }
                 }
             }
         } // anonymous namespace
@@ -124,6 +159,8 @@ namespace kx {
                     }
 
                     RenderDetailedInformationSettings(settings.objectESP);
+                    // NEW: Visible Objects live table
+                    RenderVisibleObjectsTable();
                 }
                 ImGui::EndTabItem();
             }
