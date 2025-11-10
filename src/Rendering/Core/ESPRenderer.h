@@ -11,8 +11,10 @@ public:
     static void Initialize(Camera& camera);
     static void Render(float screenWidth, float screenHeight, const MumbleLinkData* mumbleData);
 
-    // NEW: Accessor for latest processed render data (filtered + visuals)
+    // Latest processed (on-screen) render data
     static const PooledFrameRenderData& GetProcessedRenderData();
+    // NEW: Latest filtered data (pre-visuals, not culled by screen projection)
+    static const PooledFrameRenderData& GetFilteredRenderData();
 
 private:
     static bool ShouldHideESP(const MumbleLinkData* mumbleData);

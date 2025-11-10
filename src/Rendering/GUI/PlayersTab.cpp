@@ -14,41 +14,58 @@ namespace GUI {
 namespace {
 
     void RenderVisiblePlayersTable() {
-        const auto& data = ESPRenderer::GetProcessedRenderData();
-
+        auto& settings = AppState::Get().GetSettings();
+        const auto& visualsData = ESPRenderer::GetProcessedRenderData();
+        const auto& filteredData = ESPRenderer::GetFilteredRenderData();
+        bool includeOffscreen = settings.playerESP.listOffscreenEntities;
         if (ImGui::CollapsingHeader("Visible Players", ImGuiTreeNodeFlags_DefaultOpen)) {
+            ImGui::Checkbox("List Off-Screen##Players", &settings.playerESP.listOffscreenEntities);
             ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_SizingStretchSame;
             ImVec2 tableSize(0,200); // fixed height with vertical scrolling
             if (ImGui::BeginTable("VisiblePlayersTable",1, flags, tableSize)) {
-                for (const auto& item : data.finalizedEntities) {
-                    if (item.context.entityType != ESPEntityType::Player) continue;
-
-                    std::string name = item.context.playerName;
-                    if (name.empty()) {
-                        // Fallback to profession name for unnamed/hostile players
-                        const auto* player = static_cast<const RenderablePlayer*>(item.entity);
-                        if (player) {
-                            if (const char* prof = ESPFormatting::GetProfessionName(player->profession)) {
-                                name = prof;
-                            }
+                if (includeOffscreen) {
+                    // Use filtered raw list (pre screen cull) so off-screen entities appear
+                    for (const auto* player : filteredData.players) {
+                        if (!player) continue;
+                        std::string name = !player->playerName.empty() ? player->playerName : player->characterName;
+                        if (name.empty()) {
+                            if (const char* prof = ESPFormatting::GetProfessionName(player->profession)) name = prof; else name = "(Unknown)";
                         }
-                        if (name.empty()) name = "(Unknown)";
+                        float dist = player->gameplayDistance;
+                        char buf[256];
+                        std::snprintf(buf, sizeof(buf), "%s - %.1fm", name.c_str(), dist);
+
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted(buf);
                     }
+                } else {
+                    // Use processed (on-screen) finalized entities
+                    for (const auto& item : visualsData.finalizedEntities) {
+                        if (item.context.entityType != ESPEntityType::Player) continue;
+                        std::string name = item.context.playerName;
+                        if (name.empty()) {
+                            const auto* player = static_cast<const RenderablePlayer*>(item.entity);
+                            if (player) {
+                                if (const char* prof = ESPFormatting::GetProfessionName(player->profession)) name = prof;
+                            }
+                            if (name.empty()) name = "(Unknown)";
+                        }
+                        float dist = item.entity->gameplayDistance;
+                        char buf[256];
+                        std::snprintf(buf, sizeof(buf), "%s - %.1fm", name.c_str(), dist);
 
-                    float dist = item.entity->gameplayDistance;
-                    char buf[256];
-                    std::snprintf(buf, sizeof(buf), "%s - %.1fm", name.c_str(), dist);
-
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(buf);
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted(buf);
+                    }
                 }
                 ImGui::EndTable();
             }
         }
     }
 
-} // namespace
+} // anonymous namespace
 
 void RenderPlayersTab() {
     if (ImGui::BeginTabItem("Players")) {

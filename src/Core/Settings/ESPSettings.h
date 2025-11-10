@@ -53,6 +53,8 @@ namespace kx {
         bool showDetailRace = true;
         float hostileBoostMultiplier = 2.0f;
         TrailSettings trails;
+        // NEW: include off-screen entities in GUI tables
+        bool listOffscreenEntities = false;
     };
 
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PlayerEspSettings, enabled, renderBox, renderDistance, renderDot, renderDetails,
@@ -61,7 +63,7 @@ namespace kx {
                                        gearDisplayMode, energyDisplayType, showDetailLevel, showDetailHp,
                                        showDetailAttitude, showDetailEnergy, showDetailPosition, showDetailRank,
                                        showDetailProfession, showDetailRace, hostileBoostMultiplier, showFriendly, showHostile, showNeutral,
-                                       showIndifferent, trails);
+                                       showIndifferent, trails, listOffscreenEntities);
 
     struct NpcEspSettings : AttitudeSettings {
         bool enabled = true;
@@ -91,6 +93,8 @@ namespace kx {
         bool showDetailAttitude = true;
         bool showDetailRank = true;
         bool showDetailPosition = true;
+        // NEW: include off-screen entities in GUI tables
+        bool listOffscreenEntities = false;
     };
 
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(NpcEspSettings, enabled, renderBox, renderDistance, renderDot, renderDetails,
@@ -98,7 +102,7 @@ namespace kx {
                                        showHealthPercentage, renderName, showLegendary, showChampion, showElite, showVeteran,
                                        showAmbient, showNormal, showDeadNpcs, showDetailLevel, showDetailHp,
                                        showDetailAttitude, showDetailRank, showDetailPosition, showFriendly,
-                                       showHostile, showNeutral, showIndifferent);
+                                       showHostile, showNeutral, showIndifferent, listOffscreenEntities);
 
     struct ObjectEspSettings {
         bool enabled = true;
@@ -146,16 +150,18 @@ namespace kx {
         bool showDetailPosition = true;
         bool showDetailResourceInfo = true;
         bool showDetailGatherableStatus = true;
+        // NEW: include off-screen entities in GUI tables
+        bool listOffscreenEntities = false;
     };
 
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ObjectEspSettings, enabled, renderBox, maxBoxHeight, renderCircle, renderSphere, renderDistance,
-                                       renderDot, renderDetails, renderHealthBar, showBurstDps, showDamageNumbers,
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ObjectEspSettings, enabled, renderBox, maxBoxHeight, renderCircle, renderSphere,
+                                       renderDistance, renderDot, renderDetails, renderHealthBar, showBurstDps, showDamageNumbers,
                                        showOnlyDamaged, showHealthPercentage, showDeadGadgets, renderName, showResourceNodes,
                                        showWaypoints, showVistas, showCraftingStations, showAttackTargets,
                                        showPlayerCreated, showInteractables, showDoors, showPortals, showDestructible,
                                        showPoints, showPlayerSpecific, showProps, showBuildSites, showBountyBoards,
                                        showRifts, showGeneric, showGeneric2, showUnknown, showAttackTargetList,
                                        showAttackTargetListOnlyInCombat, showDetailGadgetType, showDetailHealth, showDetailPosition, showDetailResourceInfo,
-                                       showDetailGatherableStatus);
+                                       showDetailGatherableStatus, listOffscreenEntities);
 
 } // namespace kx

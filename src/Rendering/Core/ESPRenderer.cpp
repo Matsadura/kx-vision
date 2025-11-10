@@ -20,7 +20,6 @@
 
 namespace kx {
 
-// Initialize the static camera pointer
 Camera* ESPRenderer::s_camera = nullptr;
 
 // Object pools to eliminate heap churn - pre-allocate reasonable number of entities
@@ -30,13 +29,17 @@ static ObjectPool<RenderableGadget> s_gadgetPool(5000);
 static ObjectPool<RenderableAttackTarget> s_attackTargetPool(1000);
 
 // Static variables for frame rate limiting and three-stage pipeline
-static PooledFrameRenderData s_processedRenderData; // Filtered data ready for rendering
+static PooledFrameRenderData s_processedRenderData; // Filtered + visuals, on-screen only
+static PooledFrameRenderData s_filteredRenderData; // Filtered, pre-visuals (may include off-screen)
 static float s_lastUpdateTime = 0.0f;
 static CombatStateManager g_combatStateManager;
 
 // NEW: Accessor implementation
 const PooledFrameRenderData& ESPRenderer::GetProcessedRenderData() {
     return s_processedRenderData;
+}
+const PooledFrameRenderData& ESPRenderer::GetFilteredRenderData() {
+    return s_filteredRenderData;
 }
 
 void ESPRenderer::Initialize(Camera& camera) {
@@ -53,6 +56,7 @@ void ESPRenderer::UpdateESPData(const FrameContext& frameContext, float currentT
         s_gadgetPool.Reset();
         s_attackTargetPool.Reset();
         s_processedRenderData.Reset();
+        s_filteredRenderData.Reset();
         
         // Stage 1: Extract
         PooledFrameRenderData extractedData;
@@ -77,12 +81,11 @@ void ESPRenderer::UpdateESPData(const FrameContext& frameContext, float currentT
         allEntities.insert(allEntities.end(), extractedData.attackTargets.begin(), extractedData.attackTargets.end());
         g_combatStateManager.Update(allEntities, frameContext.now);
         
-        // Stage 2: Filter
-        PooledFrameRenderData filteredData;
-        ESPFilter::FilterPooledData(extractedData, *s_camera, filteredData, g_combatStateManager, frameContext.now);
+        // Stage 2: Filter -> keep around for GUI
+        ESPFilter::FilterPooledData(extractedData, *s_camera, s_filteredRenderData, g_combatStateManager, frameContext.now);
         
-        // Stage 2.5: Calculate Visuals
-        ESPVisualsProcessor::Process(frameContext, filteredData, s_processedRenderData);
+        // Stage 2.5: Visuals (on-screen only) -> renderer uses this
+        ESPVisualsProcessor::Process(frameContext, s_filteredRenderData, s_processedRenderData);
 
         // Stage 2.8: Update adaptive far plane (use extracted data for true scene depth)
         AppState::Get().UpdateAdaptiveFarPlane(extractedData);
